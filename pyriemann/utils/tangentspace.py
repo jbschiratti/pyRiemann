@@ -1,5 +1,6 @@
 import numpy
 from .base import sqrtm, invsqrtm, logm, expm
+from .paralleltransport import paralleltransport
 
 ###############################################################
 # Tangent Space
@@ -27,6 +28,33 @@ def tangent_space(covmats, Cref):
         T[index, :] = numpy.multiply(coeffs, tmp[idx])
     return T
 
+def tangent_space_parallel_transport(covmats, Cref_covmats, Cref_target):
+    """ The tangent vectors in covemats (assumed to be tangent vectors at
+    Cref_covemats) are transported to the tangent space at Cref_target.
+
+
+    :param tangent vectors set
+    :param Cref_covmats : covariance matrix
+    :param Cref_target : covariance
+    :returns tangent vectors set
+
+    """
+    Nt, Ne, Ne = covmats.shape
+    isCref_covmats = invsqrtm(Cref_covmats)
+    isCref_target = invsqrtm(Cref_target)
+    idx = numpy.triu_indices_from(Cref_covmats)
+    coeffs = (numpy.sqrt(2) * numpy.triu(numpy.ones((Ne, Ne)), 1) +
+              numpy.eye(Ne))[idx]
+    Nf = int(Ne * (Ne + 1) / 2)
+    T = numpy.empty((Nt, Nf))
+    for index in range(Nt):
+        tmp = numpy.dot(numpy.dot(isCref_covmats, covmats[index, :, :]),
+                        isCref_covmats)
+        tmp = logm(tmp)
+        tmp = paralleltransport(Cref_covmats, Cref_target, tmp)
+        tmp = numpy.dot(numpy.dot(isCref_target, tmp), isCref_target)
+        T[index, :] = numpy.multiply(coeffs, tmp[idx])
+    return T
 
 def untangent_space(T, Cref):
     """Project a set of Tangent space vectors in the manifold according to the given reference point Cref
