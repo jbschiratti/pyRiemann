@@ -1,6 +1,7 @@
 """Tangent space functions."""
 from .utils.mean import mean_covariance
-from .utils.tangentspace import tangent_space, untangent_space
+from .utils.tangentspace import (tangent_space, untangent_space,
+                                 tangent_space_parallel_transport)
 from .utils.base import check_version
 
 import numpy
@@ -138,12 +139,13 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         ts : ndarray, shape (n_trials, n_ts)
             the tangent space projection of the matrices.
         """
-        self._check_reference_points(X)
         if self.tsupdate:
             Cr = mean_covariance(X, metric=self.metric)
+            T = tangent_space_parallel_transport(X, Cr, self.reference_)
         else:
             Cr = self.reference_
-        return tangent_space(X, Cr)
+            T = tangent_space(X, Cr)
+        return T
 
     def fit_transform(self, X, y=None, sample_weight=None):
         """Fit and transform in a single function.
