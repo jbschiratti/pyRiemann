@@ -6,3 +6,6 @@
 
 # Pycharm settings
 .idea/**
+
+# Remove some examples folders
+/examples/examplesPtParallel/**
