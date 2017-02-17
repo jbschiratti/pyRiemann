@@ -7,11 +7,12 @@ from .paralleltransport import paralleltransport
 ###############################################################
 
 
-def tangent_space(covmats, Cref):
+def tangent_space(covmats, Cref, metric='riemann'):
     """Project a set of covariance matrices in the tangent space according to the given reference point Cref
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :param Cref: The reference covariance matrix
+    :param metric : str ; defaults to 'riemann'
     :returns: the Tangent space , a matrix of Ntrials X (Nchannels*(Nchannels+1)/2)
 
     """
@@ -23,12 +24,17 @@ def tangent_space(covmats, Cref):
     coeffs = (numpy.sqrt(2) * numpy.triu(numpy.ones((Ne, Ne)), 1) +
               numpy.eye(Ne))[idx]
     for index in range(Nt):
-        tmp = numpy.dot(numpy.dot(Cm12, covmats[index, :, :]), Cm12)
-        tmp = logm(tmp)
-        T[index, :] = numpy.multiply(coeffs, tmp[idx])
+        if metric is 'riemann':
+            tmp = numpy.dot(numpy.dot(Cm12, covmats[index, :, :]), Cm12)
+            tmp = logm(tmp)
+            T[index, :] = numpy.multiply(coeffs, tmp[idx])
+        elif metric is 'euclid':
+            tmp = logm(covmats[index, :, :]) - logm(Cref)
+            T[index, :] = numpy.multiply(coeffs, tmp[idx])
     return T
 
-def tangent_space_parallel_transport(covmats, Cref_covmats, Cref_target):
+def tangent_space_parallel_transport(covmats, Cref_covmats, Cref_target,
+                                     metric='riemann'):
     """ The tangent vectors in covemats (assumed to be tangent vectors at
     Cref_covemats) are transported to the tangent space at Cref_target.
 
@@ -36,6 +42,7 @@ def tangent_space_parallel_transport(covmats, Cref_covmats, Cref_target):
     :param tangent vectors set
     :param Cref_covmats : covariance matrix
     :param Cref_target : covariance
+    :param metric : str
     :returns tangent vectors set
 
     """
@@ -48,12 +55,16 @@ def tangent_space_parallel_transport(covmats, Cref_covmats, Cref_target):
     Nf = int(Ne * (Ne + 1) / 2)
     T = numpy.empty((Nt, Nf))
     for index in range(Nt):
-        tmp = numpy.dot(numpy.dot(isCref_covmats, covmats[index, :, :]),
-                        isCref_covmats)
-        tmp = logm(tmp)
-        tmp = paralleltransport(Cref_covmats, Cref_target, tmp)
-        tmp = numpy.dot(numpy.dot(isCref_target, tmp), isCref_target)
-        T[index, :] = numpy.multiply(coeffs, tmp[idx])
+        if metric is 'riemann':
+            tmp = numpy.dot(numpy.dot(isCref_covmats, covmats[index, :, :]),
+                            isCref_covmats)
+            tmp = logm(tmp)
+            tmp = paralleltransport(Cref_covmats, Cref_target, tmp)
+            tmp = numpy.dot(numpy.dot(isCref_target, tmp), isCref_target)
+            T[index, :] = numpy.multiply(coeffs, tmp[idx])
+        elif metric is 'euclid':
+            tmp = logm(covmats[index, :, :]) - logm(Cref_covmats)
+            T[index, :] = numpy.multiply(coeffs, tmp[idx])
     return T
 
 def untangent_space(T, Cref):

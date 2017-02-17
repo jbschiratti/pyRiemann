@@ -141,10 +141,11 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         """
         if self.tsupdate:
             Cr = mean_covariance(X, metric=self.metric)
-            T = tangent_space_parallel_transport(X, Cr, self.reference_)
+            T = tangent_space_parallel_transport(X, Cr, self.reference_,
+                                                 metric=self.metric)
         else:
             Cr = self.reference_
-            T = tangent_space(X, Cr)
+            T = tangent_space(X, Cr, metric=self.metric)
         return T
 
     def fit_transform(self, X, y=None, sample_weight=None):
@@ -168,7 +169,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         self._check_reference_points(X)
         self.reference_ = mean_covariance(X, metric=self.metric,
                                           sample_weight=sample_weight)
-        return tangent_space(X, self.reference_)
+        return tangent_space(X, self.reference_, metric=self.metric)
 
     def inverse_transform(self, X, y=None):
         """Inverse transform.
